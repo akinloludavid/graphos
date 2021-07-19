@@ -1,0 +1,20 @@
+const express = require('express')
+const cors = require('cors')
+const morgan = require('morgan')
+const connectDB = require('./config/database')
+const blogRoutes = require('./routers/blogroutes')
+const userRoutes = require('./routers/usersRoutes')
+const fileUpload = require('./routers/fileUser')
+const app = express()
+app.use(express.json())
+app.use(morgan('dev'))
+app.use(cors())
+connectDB()
+
+app.use('/', blogRoutes)
+app.use('/user', userRoutes)
+app.use('/image', fileUpload)
+const PORT = process.env.PORT || 8000
+app.listen(PORT, ()=>{
+  console.log('Server is on fire')
+})
