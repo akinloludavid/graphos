@@ -12,6 +12,9 @@ const userSchema = new mongoose.Schema({
   username:{
     type:String
   },
+  bio:{
+    type:String
+  },
   email:{
     type:String,
     unique:true,
@@ -28,7 +31,13 @@ const userSchema = new mongoose.Schema({
     enum:{
       values: ['male', 'female']
     }
-  }
+  },
+  avatar:{
+    type:String
+  },
+  cloudinary_id: {
+    type: String,
+  },
 })
 const JWT_SECRET_KEY = process.env.JWT_SECRET_KEY
 userSchema.methods.generateToken = function(){

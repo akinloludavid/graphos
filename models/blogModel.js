@@ -24,7 +24,7 @@ const blogSchema = new mongoose.Schema({
     required:true
   },
   tags:{
-    type:[String]
+    type:String
   },
   likesCount:{
     type:Number,
@@ -37,7 +37,16 @@ const blogSchema = new mongoose.Schema({
   ], 
   creator:{
     type:Owner
-  }
+  },
+  bookmarks:{
+    type:[String]
+  }, 
+  blogImage:{
+    type:String
+  },
+  cloudinary_id: {
+    type: String,
+  },
 
 }, {timestamps:true})
 

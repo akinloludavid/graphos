@@ -1,8 +1,12 @@
 const {UsersModel} = require ('../models/userModel.js')
 const bcrypt = require('bcryptjs')
-const jwt = require('jsonwebtoken')
+const jwt = require('jsonwebtoken');
+
+const cloudinary = require('../utils/cloudinary')
+const upload = require('../utils/multer');
+
 exports.createAccount = async (req,res)=>{
- 
+
   try{
 
     const InputEmail = await UsersModel.findOne({email:req.body.email})
@@ -27,6 +31,7 @@ exports.createAccount = async (req,res)=>{
     
     await UsersModel.create(newUser)
     return res.status(200).json({
+      success:true,
       user:newUser
     })
   } catch (error) {
@@ -41,10 +46,6 @@ exports.createAccount = async (req,res)=>{
 
 exports.logIn = async (req,res)=>{
   try{
-  // const user = {
-  //   email:req.body.email,
-  //   password:req.body.password
-  // }
   const user = await UsersModel.findOne({email:req.body.email})
   if(!user){
     return res.status(404).json({
@@ -73,6 +74,72 @@ exports.logIn = async (req,res)=>{
     return res.status(500).json({
       message:err.message,
       status:'error',
+      success:false
+    })
+  }
+}
+
+exports.updateUserProfile = async (req,res)=>{
+  try{
+    const currentUser = req.user
+    const user = await UsersModel.findById(req.params.id)
+    if(!user) {
+      return res.status(404).json({
+        success:false,
+        message:'user not found'
+      })
+    }
+    if(req.params.id !== String(currentUser._id)){
+      return res.status(403).json({
+        success:false,
+        message:'unauthorized'
+      })
+    }
+    else {
+      const updatedUser = await UsersModel.findByIdAndUpdate(req.params.id, {
+        bio: req.body.bio,
+        gender: req.body.gender
+      },{new:true})
+      const newUserProfile = await updatedUser.save()
+      return res.status(200).json({
+        user:newUserProfile, 
+        success:true
+      })
+    }
+  }
+  catch(error){
+    return res.status(500).json({
+      error:error.message,
+      status:'error',
+      success:false
+    })
+  }
+}
+
+exports.uploadProfileImage = async (req,res)=>{
+  try{
+    const result = await cloudinary.uploader?.upload(req.file.path)
+    
+    const user = await UsersModel.findById(req.params.id);
+    if(!user){
+      return res.status(404).json({
+        error:'not found',
+        success:false
+      })
+    }
+
+    const currentUser = await UsersModel.findByIdAndUpdate(req.params.id, {
+      avatar:result.secure_url,
+      cloudinary_id:result.public_id
+    }, {new:true})
+    const updatedUserImage = await currentUser.save()
+    return res.json({
+      success:true,
+      user:updatedUserImage
+    })
+  }catch(err){
+    return res.status(500).json({
+      error:err.message,
       success:false
     })
   }

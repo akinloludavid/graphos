@@ -1,11 +1,24 @@
+const NodeCache = require('node-cache')
+
+const myCache = new NodeCache({stdTTL:100, checkperiod:600})
 const {BlogModel} = require('../models/blogModel')
+const cloudinary = require('../utils/cloudinary')
+const upload = require('../utils/multer');
+
 exports.getAllPosts = async (req,res)=>{
   try{
-    const allBlogs = await BlogModel.find({})
+    if(myCache.has('blogs')){
+      const cachedBlogs = myCache.get('blogs')
+      return res.json({success:true, posts: cachedBlogs})
+    }
+    const allBlogs = await BlogModel.find({}).sort({createdAt: -1})
+
+    myCache.set('blogs', allBlogs)
     return res.status(200).json({
       success:true,
       posts:allBlogs
-    })
+    });
+
   }catch(err){
     return res.status(500).json({
       success:false,
@@ -14,10 +27,28 @@ exports.getAllPosts = async (req,res)=>{
   }
 }
 
+exports.getCurrentUserPosts = async (req,res)=>{
+  try {
+    const currentUser = req.user;
+    const allBlogs = await BlogModel.find()
+    const currentUserPosts= allBlogs.filter(blog => blog.creator?.ID ===req.params.id)
+    return res.status(200).json({
+      success: true,
+      posts: currentUserPosts
+    })
+  } catch (error) {
+    return res.status(500).json({
+      success:false,
+      error:error.message
+    })
+  }
+}
+
 exports.getOnePost = async (req,res) =>{
   const {id} = req.params
   try {
     const blog = await BlogModel.findById(id)
+    
     return res.status(200).json({
       success:true,
       post:blog
@@ -178,6 +209,36 @@ exports.deleteOnePost = async (req,res)=>{
   }
 }
 
+
+exports.bookMarkPost = async (req, res)=>{
+  try {
+    const currentUser = req.user;
+    const blog = await BlogModel.findById(req.params.id);
+    if(!blog.bookmarks.includes(currentUser._id)){
+      blog.bookmarks.push(currentUser._id)
+      await blog.save()
+      return res.status(200).json({
+        message:'post bookmarked',
+        success:true,
+        post:blog
+      })
+    }else {
+      const index = blog.bookmarks.indexOf(currentUser._id);
+      blog.bookmarks.splice(index)
+      await blog.save();
+      return res.status(200).json({
+        message: 'post unmarked',
+        success: true,
+        post: blog
+      })
+    }
+  } catch (error) {
+    return res.status(500).json({
+      message: error.message,
+      status: 'error'
+    })
+  }
+}
 exports.deletePosts = async (req,res)=>{
 
 }
